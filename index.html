@@ -154,6 +154,14 @@
   .notice{background:#fff;border-radius:18px;padding:16px;display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line)}
   .notice b{display:block;font-size:15px;margin-bottom:4px}
   .notice p{margin:0;font-size:14px;line-height:1.55;color:var(--ink2)}
+  .group-title{margin:6px 0 -6px;font-size:14px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:8px}
+  .group-title i{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .ship-done{background:var(--green-bg);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .ship-done .big{font-size:17px;font-weight:700;color:var(--green)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px;line-height:1.45}
+  .kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;color:var(--ink)}
+  .tip{font-size:13px;line-height:1.5;color:var(--ink2);border-top:1px solid #DCEBD8;padding-top:10px}
+  .late{font-size:13px;line-height:1.5;color:#7A4A00;background:#FFF4D6;border-radius:10px;padding:10px 12px}
   .center-note{margin:-6px 0 0;font-size:13px;line-height:1.55;color:var(--muted);text-align:center}
 
   /* 레이어 */
@@ -666,35 +674,65 @@ function doLookup(){
     .catch(function(e){ loading(false); showView('lookup'); toast(e.message || '조회에 실패했어요'); });
 }
 
-function renderStatus(res){
-  var labels = ['접수', '입금확인', '발송'];
-  var cards = res.items.map(function(it){
-    var step = it.status === 'waiting' ? 1 : it.status === 'confirmed' ? 2 : 3;
-    var green = it.status === 'shipped';
-    var tag = { waiting: '입금 대기', confirmed: '입금 확인', shipped: '발송 완료' }[it.status];
-    var bars = '<div class="steps ' + (green ? 'g' : 'o') + '">' + [1,2,3].map(function(n){ return '<i class="' + (n <= step ? 'on' : '') + '"></i>'; }).join('') + '</div>';
-    var lbls = '<div class="step-labels">' + labels.map(function(l, n){ return '<span class="' + (n + 1 === step ? 'cur' + (green ? ' g' : '') : '') + '">' + l + '</span>'; }).join('') + '</div>';
-    var box;
-    if (it.status === 'waiting') {
-      box = '<div class="box w"><div class="row"><b>' + esc(CFG.bank.replace('은행', '')) + ' ' + esc(CFG.account) + '</b>' +
-            '<button class="small-btn" type="button" onclick="copyAccount()">복사</button></div>' +
-            '<small>입금하시면 예약이 확정돼요.' + (it.plan ? '<br>' + esc(it.plan) + ' 출고 예정' : '') + '</small></div>';
-    } else if (it.status === 'confirmed') {
-      box = '<div class="box o"><b style="color:var(--brown)">예약 확정</b>' +
-            (it.plan ? '<span><b>' + esc(it.plan) + '</b> 출고 예정</span>'
-                     : '<span>출고 일정이 정해지면 이곳에 안내해 드려요.</span>') +
-            '<small>' + esc(CFG.arriveText) + ' · 기상 상황에 따라 출고일이 바뀔 수 있어요</small></div>';
-    } else {
-      box = '<div class="box g"><b style="color:var(--green)">' + (it.week ? esc(it.week) + ' 출고 완료' : '출고 완료') + '</b>' +
-            '<span>' + esc(CFG.arriveText) + '</span>' +
-            (it.tracking ? '<small>송장번호 ' + esc(it.tracking) + '</small>' : '') +
-            '<span style="font-size:13px;color:var(--ink2)">받으시면 바로 박스를 열어 상한 귤을 먼저 골라내고 냉장 보관해 주세요.</span></div>';
-    }
-    return '<article class="order' + (it.status === 'confirmed' ? ' focus' : '') + '">' +
-      '<div class="order-head"><div><b>' + esc(it.name) + ' · ' + it.qty + '박스</b><small>' + esc(it.address) + '</small></div>' +
-      '<span class="tag ' + it.status + '">' + tag + '</span></div>' + bars + lbls + box + '</article>';
-  }).join('');
+var GROUPS = {
+  waiting:   { title: '입금을 기다리고 있어요', color: '#E0A400' },
+  confirmed: { title: '출고를 준비하고 있어요', color: '#F07A1E' },
+  shipped:   { title: '출고가 끝났어요',       color: '#2F6B3A' }
+};
 
+function statusCard(it){
+  var labels = ['접수', '입금확인', '발송'];
+  var step = it.status === 'waiting' ? 1 : it.status === 'confirmed' ? 2 : 3;
+  var green = it.status === 'shipped';
+  var tag = { waiting: '입금 대기', confirmed: '입금 확인', shipped: '발송 완료' }[it.status];
+  var bars = '<div class="steps ' + (green ? 'g' : 'o') + '">' + [1,2,3].map(function(n){ return '<i class="' + (n <= step ? 'on' : '') + '"></i>'; }).join('') + '</div>';
+  var lbls = '<div class="step-labels">' + labels.map(function(l, n){ return '<span class="' + (n + 1 === step ? 'cur' + (green ? ' g' : '') : '') + '">' + l + '</span>'; }).join('') + '</div>';
+  var box;
+
+  if (it.status === 'waiting') {
+    box = '<div class="box w"><div class="row"><b>' + esc(CFG.bank.replace('은행', '')) + ' ' + esc(CFG.account) + '</b>' +
+          '<button class="small-btn" type="button" onclick="copyAccount()">복사</button></div>' +
+          '<small>입금하시면 예약이 확정돼요.' + (it.plan ? '<br>' + esc(it.plan) + ' 출고 예정' : '') + '</small></div>';
+
+  } else if (it.status === 'confirmed') {
+    box = '<div class="box o"><b style="color:var(--brown)">예약 확정</b>' +
+          (it.plan ? '<span><b>' + esc(it.plan) + '</b> 출고 예정</span>'
+                   : '<span>출고 일정이 정해지면 이곳에 안내해 드려요.</span>') +
+          '<small>' + esc(CFG.arriveText) + ' · 기상 상황에 따라 출고일이 바뀔 수 있어요</small></div>';
+
+  } else {
+    box = '<div class="ship-done">' +
+      '<span class="big">' + (it.shipDate ? esc(it.shipDate) + ' 출고 완료' : '출고 완료') + '</span>' +
+      '<dl class="kv" style="margin:0">' +
+        (it.arrive ? '<dt>도착 예정</dt><dd>' + esc(it.arrive) + '</dd>' : '') +
+        (it.tracking ? '<dt>송장번호</dt><dd>' + esc(it.tracking) + '</dd>' : '') +
+      '</dl>' +
+      (it.arrived
+        ? '<div class="late">도착 예정일이 지났어요. 아직 못 받으셨다면 ' + esc(CFG.contact) + '로 연락 주세요.</div>'
+        : '') +
+      '<div class="tip">받으시면 바로 박스를 열어 상한 귤을 먼저 골라내고 냉장 보관해 주세요.</div>' +
+    '</div>';
+  }
+
+  return '<article class="order' + (it.status === 'confirmed' ? ' focus' : '') + '">' +
+    '<div class="order-head"><div><b>' + esc(it.name) + ' · ' + it.qty + '박스</b><small>' + esc(it.address) + '</small></div>' +
+    '<span class="tag ' + it.status + '">' + tag + '</span></div>' + bars + lbls + box + '</article>';
+}
+
+function renderStatus(res){
+  // 상태별로 묶어서 보여주기 (서버에서 입금 대기 → 출고 준비 → 출고 완료 순으로 정렬됨)
+  var html = '', prev = null;
+  res.items.forEach(function(it){
+    if (it.status !== prev) {
+      var g = GROUPS[it.status];
+      var n = res.items.filter(function(x){ return x.status === it.status; }).length;
+      html += '<h2 class="group-title"><i style="background:' + g.color + '"></i>' + g.title + ' · ' + n + '곳</h2>';
+      prev = it.status;
+    }
+    html += statusCard(it);
+  });
+
+  var hasWaiting = res.items.some(function(x){ return x.status === 'waiting'; });
   var phoneSvg = '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2.5h2.5l1.3 3.6-1.8 1.2a9 9 0 0 0 5.7 5.7l1.2-1.8 3.6 1.3V15a2.5 2.5 0 0 1-2.5 2.5A12.5 12.5 0 0 1 2.5 5 2.5 2.5 0 0 1 5 2.5z" stroke="#2A2118" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>';
 
   $('statusPage').innerHTML =
@@ -704,11 +742,13 @@ function renderStatus(res){
     '<section class="summary">' +
       '<div><span>주문 금액</span><b>' + won(res.amount) + '</b></div>' +
       '<div><span>입금 확인</span><b style="color:#9FD99A">' + res.paidCount + ' / ' + res.count + '곳</b></div>' +
-      '<div><span>발송</span><b>' + res.shippedCount + ' / ' + res.count + '곳</b></div>' +
-    '</section>' + cards +
-    '<section class="notice"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="8.5" stroke="#B4410C" stroke-width="1.8" fill="none"/><path d="M11 6.5V11l3 2" stroke="#B4410C" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>' +
-      '<div><b>입금했는데 아직 \'입금 대기\'인가요?</b><p>입금 내역은 판매자가 직접 확인해서 표시하기 때문에 바로 반영되지 않을 수 있어요. 하루 정도 지나도 그대로라면 연락 주세요.</p></div></section>' +
-    '<a class="secondary" style="height:56px;font-weight:700" href="tel:' + esc(CFG.contact) + '" target="_top">' + phoneSvg + '문의 ' + esc(CFG.contact) + '</a>' +
+      '<div><span>출고 완료</span><b>' + res.shippedCount + ' / ' + res.count + '곳</b></div>' +
+    '</section>' + html +
+    (hasWaiting
+      ? '<section class="notice"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="8.5" stroke="#B4410C" stroke-width="1.8" fill="none"/><path d="M11 6.5V11l3 2" stroke="#B4410C" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>' +
+        '<div><b>입금했는데 아직 \'입금 대기\'인가요?</b><p>입금 내역은 판매자가 직접 확인해서 표시하기 때문에 바로 반영되지 않을 수 있어요. 하루 정도 지나도 그대로라면 연락 주세요.</p></div></section>'
+      : '') +
+    '<a class="secondary" style="height:56px;font-weight:700" href="tel:' + esc(CFG.contact) + '">' + phoneSvg + '문의 ' + esc(CFG.contact) + '</a>' +
     '<p class="center-note">주소 변경이나 취소도 위 번호로 연락 주세요.</p>' +
     '<button class="secondary" type="button" onclick="showView(\'order\')">추가로 주문하기</button>';
 }
