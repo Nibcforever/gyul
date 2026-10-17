@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>2026. 가을 귤 주문 신청</title>
 <meta name="description" content="타이벡 농법 극조생 귤 10kg 20,000원(택배비 포함). 여러 곳으로 한 번에 주문하고 진행상황도 확인하세요.">
-<!-- 카카오톡·문자 미리보기: 아래 3곳의 USERNAME/REPO를 내 주소로 바꾸세요 -->
+<!-- 카카오톡·문자 미리보기 -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="2026. 가을 귤 주문 신청">
 <meta property="og:description" content="타이벡 농법 극조생 귤 10kg · 20,000원(택배비 포함)">
@@ -50,12 +50,12 @@
 
   .ship{background:var(--soft);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
   .ship-title{font-size:13px;font-weight:700;color:var(--brown)}
-  .ship-row{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);align-items:center;gap:6px}
-  .ship-box{background:#fff;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
-  .ship-box span{font-size:12px;color:var(--muted)}
-  .ship-box b{font-size:15px;white-space:nowrap}
-  .ship-box.arrive{border:1.5px solid var(--orange)}
-  .ship-box.arrive b{color:var(--deep2)}
+  .ship-main{background:#fff;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+  .ship-ico{width:40px;height:40px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .ship-main small{display:block;font-size:12px;color:var(--muted)}
+  .ship-main b{display:block;font-size:18px;color:var(--deep2);line-height:1.3;word-break:keep-all}
+  .ship-main span{display:block;font-size:14px;color:var(--ink2);margin-top:1px}
+  .ship-arrive{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink)}
   .ship-note{font-size:12px;line-height:1.5;color:var(--muted)}
 
   /* 안내 */
@@ -325,14 +325,32 @@ function unwrap(res){
   if (!res || !res.ok) throw new Error((res && res.error) || '서버와 연결하지 못했어요.');
   return res.data;
 }
+// 서버 응답이 JSON이 아니면(주소·배포 설정 문제) 알아보기 쉬운 문구로 알려줌
+function readJson(r){
+  return r.text().then(function(t){
+    try { return JSON.parse(t); }
+    catch(e){
+      console.warn('API 응답(JSON 아님):', r.status, t.slice(0, 300));
+      throw new Error('주문 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    }
+  });
+}
+function apiReady(){
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(API_URL)) {
+    console.warn('API_URL이 올바르지 않아요. Apps Script 웹앱의 …/exec 주소를 넣어 주세요. 현재 값:', API_URL);
+    return Promise.reject(new Error('주문 서버 주소가 설정되지 않았어요.'));
+  }
+  return Promise.resolve();
+}
 function apiGet(action){
-  return fetch(API_URL + '?action=' + encodeURIComponent(action))
-    .then(function(r){ return r.json(); }).then(unwrap);
+  return apiReady().then(function(){ return fetch(API_URL + '?action=' + encodeURIComponent(action)); })
+    .then(readJson).then(unwrap);
 }
 function apiPost(body){
   // text/plain으로 보내야 Apps Script가 추가 확인 요청 없이 받아요
-  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
-    .then(function(r){ return r.json(); }).then(unwrap);
+  return apiReady().then(function(){
+    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+  }).then(readJson).then(unwrap);
 }
 var CFG = { price: 20000, maxQty: 20, maxRecipients: 30, bank: '', account: '', holder: '', contact: '', current: null };
 var recipients = [newRecipient(true)];
@@ -402,16 +420,17 @@ function applyConfig(c){
 }
 
 
-var ARROW ='<svg width="28" height="20" viewBox="0 0 28 20" aria-hidden="true"><path d="M3 10h20M17 4l6 6-6 6" stroke="#B4410C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var BOX_ICON = '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7.5l8-4.5 8 4.5v7.5l-8 4.5-8-4.5z M3 7.5l8 4.5 8-4.5M11 12v7.5" stroke="#B4410C" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg>';
+var TRUCK = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M1.5 4.5h9v7h-9zM10.5 7h3.2l2.3 2.6v1.9h-5.5" stroke="#2F6B3A" stroke-width="1.5" fill="none" stroke-linejoin="round"/><circle cx="4.5" cy="13" r="1.5" stroke="#2F6B3A" stroke-width="1.5" fill="#fff"/><circle cx="13" cy="13" r="1.5" stroke="#2F6B3A" stroke-width="1.5" fill="#fff"/></svg>';
+
 function shipBoxHtml(r){
   var head = '<span class="ship-title">지금 주문하시면</span>';
-  if (!r.ship) return head + '<span class="ship-note">출고일이 정해지면 이곳에 안내해 드려요.</span>';
+  if (!r.week) return head + '<span class="ship-note">출고 일정이 정해지면 이곳에 안내해 드려요.</span>';
   return head +
-    '<div class="ship-row">' +
-      '<div class="ship-box"><span>출고 예정</span><b>' + esc(r.ship) + '</b></div>' + ARROW +
-      '<div class="ship-box arrive"><span>도착 예정</span><b>' + esc(r.arrive) + '</b></div>' +
-    '</div>' +
-    '<span class="ship-note">택배는 출고 다음 날 도착해요(토요일 출고는 월요일 도착). 기상 상황에 따라 수확 일정이 바뀌면 출고일이 달라질 수 있어요.</span>';
+    '<div class="ship-main"><div class="ship-ico">' + BOX_ICON + '</div>' +
+      '<div><small>출고 예정</small><b>' + esc(r.week) + '</b><span>' + esc(r.datesLong) + '</span></div></div>' +
+    '<div class="ship-arrive">' + TRUCK + esc(CFG.arriveText || '출고 후 1~2일 안에 도착해요') + '</div>' +
+    '<span class="ship-note">기상 상황에 따라 수확 일정이 바뀌면 출고일이 달라질 수 있어요. 출고되면 주문 조회에서 확인할 수 있어요.</span>';
 }
 
 /* ---------- 받는 곳 ---------- */
@@ -449,7 +468,7 @@ function renderRecipients(){
       '<div class="rhead"><b>받는 곳 ' + (i + 1) + '</b>' +
         (many ? '<button class="icon-btn" type="button" aria-label="받는 곳 ' + (i + 1) + ' 삭제" data-act="del" data-id="' + r.id + '">' + CLOSE + '</button>' : '') +
       '</div>' +
-      '<label class="check"><input type="checkbox" data-id="' + r.id + '" data-f="same"' + (r.same ? ' checked' : '') + '>신청하는 분과 같아요</label>' +
+      (i === 0 ? '<label class="check"><input type="checkbox" data-id="' + r.id + '" data-f="same"' + (r.same ? ' checked' : '') + '>신청하는 분과 같아요</label>' : '') +
       (r.same ? '' :
         '<div class="grid2">' +
           '<label class="field" style="font-size:13px">이름<input data-id="' + r.id + '" data-f="name" maxlength="30" value="' + esc(r.name) + '"></label>' +
@@ -594,8 +613,8 @@ function submitOrder(){
 function renderDone(res){
   var r = res.round;
   $('doneLead').innerHTML = '아래 계좌로 입금하시면 <b>예약이 확정</b>돼요.<br>' +
-    (r.ship ? esc(r.ship) + ' 출고, <b>' + esc(r.arrive) + ' 도착 예정</b>이에요.'
-            : '출고일이 정해지면 주문 조회에서 알려드려요.');
+    (r.label ? '<b>' + esc(r.label) + '</b> 출고 예정이에요.<br>' + esc(CFG.arriveText)
+             : '출고 일정이 정해지면 주문 조회에서 알려드려요.');
   $('doneAmount').textContent = won(res.amount);
   $('doneDepositor').textContent = '입금자명은 신청하는 분 이름(' + res.senderName + ')으로 해주세요.';
   $('doneList').innerHTML = res.items.map(function(it){
@@ -659,14 +678,15 @@ function renderStatus(res){
     if (it.status === 'waiting') {
       box = '<div class="box w"><div class="row"><b>' + esc(CFG.bank.replace('은행', '')) + ' ' + esc(CFG.account) + '</b>' +
             '<button class="small-btn" type="button" onclick="copyAccount()">복사</button></div>' +
-            '<small>입금하시면 예약이 확정돼요.</small></div>';
+            '<small>입금하시면 예약이 확정돼요.' + (it.plan ? '<br>' + esc(it.plan) + ' 출고 예정' : '') + '</small></div>';
     } else if (it.status === 'confirmed') {
       box = '<div class="box o"><b style="color:var(--brown)">예약 확정</b>' +
-            (it.ship ? '<span>' + esc(it.ship) + ' 출고 → <b>' + esc(it.arrive) + ' 도착 예정</b></span>'
-                     : '<span>출고일이 정해지면 이곳에 안내해 드려요.</span>') +
-            '<small>기상 상황에 따라 출고일이 바뀔 수 있어요</small></div>';
+            (it.plan ? '<span><b>' + esc(it.plan) + '</b> 출고 예정</span>'
+                     : '<span>출고 일정이 정해지면 이곳에 안내해 드려요.</span>') +
+            '<small>' + esc(CFG.arriveText) + ' · 기상 상황에 따라 출고일이 바뀔 수 있어요</small></div>';
     } else {
-      box = '<div class="box g"><div class="row"><b style="color:var(--green)">' + (it.ship ? esc(it.ship) + ' 출고 · ' + esc(it.arrive) + ' 도착' : '발송 완료') + '</b></div>' +
+      box = '<div class="box g"><b style="color:var(--green)">' + (it.week ? esc(it.week) + ' 출고 완료' : '출고 완료') + '</b>' +
+            '<span>' + esc(CFG.arriveText) + '</span>' +
             (it.tracking ? '<small>송장번호 ' + esc(it.tracking) + '</small>' : '') +
             '<span style="font-size:13px;color:var(--ink2)">받으시면 바로 박스를 열어 상한 귤을 먼저 골라내고 냉장 보관해 주세요.</span></div>';
     }
