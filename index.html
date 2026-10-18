@@ -125,7 +125,7 @@
   .copy-btn{height:44px;padding:0 14px;border-radius:12px;border:none;background:var(--ink);color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;flex-shrink:0}
   .list-row{display:flex;justify-content:space-between;gap:12px;font-size:14px;line-height:1.5}
   .list-row + .list-row{border-top:1px solid var(--line);padding-top:12px}
-  .list-row small{display:block;color:var(--muted);font-size:14px}
+  .list-row small{display:block;color:var(--ink2);font-size:14px;word-break:keep-all;overflow-wrap:anywhere}
   .msg{font-size:14px;line-height:1.5;color:#B42318;background:#FFF5F4;border-radius:12px;padding:12px 14px}
 
   .summary{background:var(--ink);border-radius:20px;padding:18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;color:#fff}
@@ -135,7 +135,7 @@
   .order.focus{border:2px solid var(--orange)}
   .order-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
   .order-head b{font-size:16px}
-  .order-head small{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+  .order-head small{display:block;font-size:13px;line-height:1.5;color:var(--ink2);margin-top:4px;word-break:keep-all;overflow-wrap:anywhere}
   .tag{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;flex-shrink:0}
   .tag.waiting{background:var(--yellow);color:var(--yellow-ink)}
   .tag.confirmed{background:var(--deep);color:#fff}
@@ -285,7 +285,7 @@
       <div id="lkMsg" class="msg hidden"></div>
       <button class="primary" type="button" onclick="doLookup()">조회하기</button>
     </div>
-    <p class="hint" style="font-size:13px;line-height:1.55;margin:0">이름과 연락처가 모두 일치하는 주문만 보여요. 받는 분 주소는 일부만 표시됩니다.</p>
+    <p class="hint" style="font-size:13px;line-height:1.55;margin:0">이름과 연락처가 모두 일치하는 주문만 보여요. 받는 분 주소가 맞는지 함께 확인해 주세요.</p>
   </div>
 </section>
 
