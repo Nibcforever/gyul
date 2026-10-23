@@ -162,6 +162,10 @@
   .kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;color:var(--ink)}
   .tip{font-size:13px;line-height:1.5;color:var(--ink2);border-top:1px solid #DCEBD8;padding-top:10px}
   .late{font-size:13px;line-height:1.5;color:#7A4A00;background:#FFF4D6;border-radius:10px;padding:10px 12px}
+  .consent{display:flex;gap:12px;align-items:flex-start;background:var(--soft);border-radius:12px;padding:14px;cursor:pointer}
+  .consent input{width:22px;height:22px;accent-color:var(--orange);margin:1px 0 0;flex-shrink:0}
+  .consent b{display:block;font-size:15px;color:var(--ink)}
+  .consent small{display:block;font-size:13px;line-height:1.5;color:var(--ink2);margin-top:3px}
   .center-note{margin:-6px 0 0;font-size:13px;line-height:1.55;color:var(--muted);text-align:center}
 
   /* 레이어 */
@@ -224,6 +228,10 @@
       <label class="field">이름<input id="sName" type="text" autocomplete="name" maxlength="30"></label>
       <label class="field">연락처<input id="sPhone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000"></label>
       <span class="hint">숫자만 입력해도 자동으로 하이픈이 들어가요. 주문 조회 때도 이 이름과 연락처를 써요.</span>
+      <label class="consent"><input type="checkbox" id="newsOk">
+        <span><b>귤 소식 받기 <span style="font-weight:500;color:var(--muted)">(선택)</span></b>
+        <small>저희 귤 소식을 이 연락처로 알려드려요.<br>원하지 않으시면 언제든 말씀해 주세요.</small></span>
+      </label>
     </div>
   </div>
 
@@ -557,6 +565,7 @@ function collect(){
   var sName = $('sName').value.trim(), sPhone = $('sPhone').value;
   return {
     sender: { name: sName, phone: sPhone },
+    newsOk: $('newsOk').checked,
     recipients: recipients.map(function(r){
       return { name: r.same ? sName : r.name.trim(), phone: r.same ? sPhone : r.phone, address: r.address.trim(), detail: r.detail.trim(), qty: r.qty };
     })
@@ -624,7 +633,8 @@ function renderDone(res){
     (r.label ? '<b>' + esc(r.label) + '</b> 출고 예정이에요.<br>' + esc(CFG.arriveText)
              : '출고 일정이 정해지면 주문 조회에서 알려드려요.');
   $('doneAmount').textContent = won(res.amount);
-  $('doneDepositor').textContent = '입금자명은 신청하는 분 이름(' + res.senderName + ')으로 해주세요.';
+  $('doneDepositor').textContent = '입금자명은 신청하는 분 이름(' + res.senderName + ')으로 해주세요.' +
+    (res.newsOk ? ' 다음 귤 소식도 이 연락처로 알려드릴게요.' : '');
   $('doneList').innerHTML = res.items.map(function(it){
     return '<div class="list-row"><div><b>' + esc(it.name) + '</b><small>' + esc(it.address) + '</small></div><b style="flex-shrink:0">' + it.qty + '박스</b></div>';
   }).join('');
