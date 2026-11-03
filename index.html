@@ -369,7 +369,7 @@ function apiPost(body){
   }).then(readJson).then(unwrap);
 }
 var CFG = { price: 20000, maxQty: 20, maxRecipients: 30, bank: '', account: '', holder: '', contact: '', current: null };
-var recipients = [newRecipient(true)];
+var recipients = [newRecipient(false)];
 var lastSender = null;
 var postcodeTarget = null;
 
@@ -620,7 +620,7 @@ function submitOrder(){
       store('gyulSender', lastSender);
       $('lkName').value = lastSender.name; $('lkPhone').value = lastSender.phone;
       renderDone(res);
-      recipients = [newRecipient(true)];
+      recipients = [newRecipient(false)];
       renderRecipients();
       showView('done');
     })
