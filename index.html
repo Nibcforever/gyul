@@ -424,12 +424,16 @@ function applyConfig(c){
   document.querySelectorAll('.js-holder').forEach(function(e){ e.textContent = c.holder; });
   var cur = c.current;
   if (cur) {
-    $('roundBadge').textContent = '주문 접수 중';
+    $('roundBadge').textContent = cur.isLast ? '마지막 주문 접수 중' : '주문 접수 중';
     $('shipBox').innerHTML = shipBoxHtml(cur);
     $('submitBtn').disabled = false;
   } else {
-    $('roundBadge').textContent = '주문 마감';
-    $('shipBox').innerHTML = '<span class="ship-title">지금은 주문을 받고 있지 않아요</span><span class="ship-note">다음 주문 접수를 준비 중이에요. 문의는 ' + esc(c.contact) + '로 연락 주세요.</span>';
+    $('roundBadge').textContent = c.seasonOver ? '가을 귤 주문 마감' : '주문 마감';
+    $('shipBox').innerHTML = c.seasonOver
+      ? '<span class="ship-title">가을 귤 주문이 마감됐어요</span>' +
+        '<span style="font-size:15px;font-weight:600;line-height:1.5;color:var(--ink)">겨울 귤 주문이 시작되면 알려드릴게요.</span>' +
+        '<span class="ship-note">귤 소식 받기에 동의해 주신 분께는 문자로 안내해 드려요. 주문해 주신 모든 분께 감사드려요. 주문 조회는 계속 하실 수 있어요. 문의는 ' + esc(c.contact) + '로 연락 주세요.</span>'
+      : '<span class="ship-title">지금은 주문을 받고 있지 않아요</span><span class="ship-note">다음 주문 접수를 준비 중이에요. 문의는 ' + esc(c.contact) + '로 연락 주세요.</span>';
     $('submitBtn').disabled = true;
   }
   updateTotal();
@@ -444,7 +448,7 @@ function shipBoxHtml(r){
   if (!r.week) return head + '<span class="ship-note">출고 일정이 정해지면 이곳에 안내해 드려요.</span>';
   return head +
     '<div class="ship-main"><div class="ship-ico">' + BOX_ICON + '</div>' +
-      '<div><small>출고 예정</small><b>' + esc(r.week) + '</b><span>' + esc(r.datesLong) + '</span></div></div>' +
+      '<div><small>' + (r.isLast ? '마지막 출고 예정' : '출고 예정') + '</small><b>' + esc(r.week) + '</b><span>' + esc(r.datesLong) + '</span></div></div>' +
     '<div class="ship-arrive">' + TRUCK + esc(CFG.arriveText || '출고 후 1~2일 안에 도착해요') + '</div>' +
     '<span class="ship-note">기상 상황에 따라 수확 일정이 바뀌면 출고일이 달라질 수 있어요. 출고되면 주문 조회에서 확인할 수 있어요.</span>';
 }
@@ -630,7 +634,7 @@ function submitOrder(){
 function renderDone(res){
   var r = res.round;
   $('doneLead').innerHTML = '아래 계좌로 입금하시면 <b>예약이 확정</b>돼요.<br>' +
-    (r.label ? '<b>' + esc(r.label) + '</b> 출고 예정이에요.<br>' + esc(CFG.arriveText)
+    (r.label ? '<b>' + esc(r.label) + '</b> ' + (r.isLast ? '마지막 출고 예정이에요.' : '출고 예정이에요.') + '<br>' + esc(CFG.arriveText)
              : '출고 일정이 정해지면 주문 조회에서 알려드려요.');
   $('doneAmount').textContent = won(res.amount);
   $('doneDepositor').textContent = '입금자명은 신청하는 분 이름(' + res.senderName + ')으로 해주세요.' +
@@ -702,11 +706,11 @@ function statusCard(it){
   if (it.status === 'waiting') {
     box = '<div class="box w"><div class="row"><b>' + esc(CFG.bank.replace('은행', '')) + ' ' + esc(CFG.account) + '</b>' +
           '<button class="small-btn" type="button" onclick="copyAccount()">복사</button></div>' +
-          '<small>입금하시면 예약이 확정돼요.' + (it.plan ? '<br>' + esc(it.plan) + ' 출고 예정' : '') + '</small></div>';
+          '<small>입금하시면 예약이 확정돼요.' + (it.plan ? '<br>' + esc(it.plan) + (it.isLast ? ' 마지막 출고 예정' : ' 출고 예정') : '') + '</small></div>';
 
   } else if (it.status === 'confirmed') {
     box = '<div class="box o"><b style="color:var(--brown)">예약 확정</b>' +
-          (it.plan ? '<span><b>' + esc(it.plan) + '</b> 출고 예정</span>'
+          (it.plan ? '<span><b>' + esc(it.plan) + '</b> ' + (it.isLast ? '마지막 출고 예정' : '출고 예정') + '</span>'
                    : '<span>출고 일정이 정해지면 이곳에 안내해 드려요.</span>') +
           '<small>' + esc(CFG.arriveText) + ' · 기상 상황에 따라 출고일이 바뀔 수 있어요</small></div>';
 
