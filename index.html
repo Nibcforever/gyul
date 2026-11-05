@@ -216,13 +216,29 @@
       <div class="info-ico" style="background:#FDE3C8"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7l7-4 7 4v7l-7 4-7-4z M3 7l7 4 7-4M10 11v7" stroke="#B4410C" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg></div>
       <div><b>받으시면 바로 박스를 열어주세요</b><p>일찍 수확하는 극조생 귤은 껍질이 얇아 무르거나 상하기 쉬워요. 상한 귤이 있으면 먼저 골라내고 냉장 보관하면 더 오래 신선하게 드실 수 있어요.</p></div>
     </div>
-    <div class="info-item">
+    <div class="info-item" id="infoBank">
       <div class="info-ico" style="background:#FFF0C2"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="5" width="15" height="11" rx="2" stroke="#7A5A00" stroke-width="1.7" fill="none"/><path d="M2.5 8.5h15M5.5 13h3" stroke="#7A5A00" stroke-width="1.7" stroke-linecap="round"/></svg></div>
       <div><b>입금하시면 예약이 확정돼요</b><p><span class="js-bank"></span> <span class="js-account"></span><br>예금주 <span class="js-holder"></span></p></div>
     </div>
   </div>
 
-  <div class="sec">
+  <!-- 주문 마감 때만 보이는 귤 소식 받기 -->
+  <div class="sec hidden" id="secNews">
+    <div class="sec-head"><h2>귤 소식 받기</h2></div>
+    <div class="card" id="newsCard">
+      <p class="sec-sub" id="newsLead" style="font-size:14px;color:var(--ink2)">다음 귤 주문이 시작되면 문자로 알려드려요.</p>
+      <label class="field">이름<input id="nName" type="text" autocomplete="name" maxlength="30"></label>
+      <label class="field">연락처<input id="nPhone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000"></label>
+      <label class="consent"><input type="checkbox" id="nOk">
+        <span><b>귤 소식 받기에 동의해요</b>
+        <small>저희 귤 소식을 이 연락처로 알려드려요.<br>원하지 않으시면 언제든 말씀해 주세요.</small></span>
+      </label>
+      <div id="nMsg" class="msg hidden"></div>
+      <button class="primary" type="button" onclick="subscribeNews()">소식 받기 신청</button>
+    </div>
+  </div>
+
+  <div class="sec" id="secSender">
     <div class="sec-head"><h2><span class="num">1</span>신청하는 분</h2></div>
     <div class="card">
       <label class="field">이름<input id="sName" type="text" autocomplete="name" maxlength="30"></label>
@@ -235,7 +251,7 @@
     </div>
   </div>
 
-  <div class="sec">
+  <div class="sec" id="secRecip">
     <div class="sec-head"><h2><span class="num">2</span>귤 받는 분</h2><span class="hint" id="recCount">1곳</span></div>
     <p class="sec-sub">여러 곳으로 보내실 때는 '받는 곳 추가하기'로 한 번에 신청하세요.</p>
     <div id="recipients" style="display:flex;flex-direction:column;gap:12px"></div>
@@ -245,7 +261,7 @@
     </button>
   </div>
 
-  <footer class="footer">
+  <footer class="footer" id="orderFooter">
     <div class="total"><span id="totalText">1곳 · 총 1박스</span><b id="totalAmount">20,000원</b></div>
     <button class="primary" id="submitBtn" type="button" onclick="openConfirm()">주문 신청하기</button>
   </footer>
@@ -401,10 +417,11 @@ function bindPhone(el){ el.addEventListener('input', function(){ el.value = fmtP
 
 /* ---------- 초기화 ---------- */
 document.addEventListener('DOMContentLoaded', function(){
-  bindPhone($('sPhone')); bindPhone($('lkPhone'));
+  bindPhone($('sPhone')); bindPhone($('lkPhone')); bindPhone($('nPhone'));
+  $('nName').addEventListener('input', function(){ this.classList.remove('err'); });
   $('sName').addEventListener('input', function(){ this.classList.remove('err'); });
   var saved = load('gyulSender');
-  if (saved) { $('sName').value = saved.name || ''; $('sPhone').value = saved.phone || ''; $('lkName').value = saved.name || ''; $('lkPhone').value = saved.phone || ''; }
+  if (saved) { $('sName').value = saved.name || ''; $('sPhone').value = saved.phone || ''; $('lkName').value = saved.name || ''; $('lkPhone').value = saved.phone || ''; $('nName').value = saved.name || ''; $('nPhone').value = saved.phone || ''; }
   renderRecipients();
   if (INITIAL_PAGE === 'lookup') showView('lookup');
   apiGet('init').then(applyConfig).catch(function(e){
@@ -432,11 +449,40 @@ function applyConfig(c){
     $('shipBox').innerHTML = c.seasonOver
       ? '<span class="ship-title">가을 귤 주문이 마감됐어요</span>' +
         '<span style="font-size:15px;font-weight:600;line-height:1.5;color:var(--ink)">겨울 귤 주문이 시작되면 알려드릴게요.</span>' +
-        '<span class="ship-note">귤 소식 받기에 동의해 주신 분께는 문자로 안내해 드려요. 주문해 주신 모든 분께 감사드려요. 주문 조회는 계속 하실 수 있어요. 문의는 ' + esc(c.contact) + '로 연락 주세요.</span>'
-      : '<span class="ship-title">지금은 주문을 받고 있지 않아요</span><span class="ship-note">다음 주문 접수를 준비 중이에요. 문의는 ' + esc(c.contact) + '로 연락 주세요.</span>';
+        '<span class="ship-note">아래 귤 소식 받기를 신청해 주시면 문자로 안내해 드려요. 주문해 주신 모든 분께 감사드려요. 주문 조회는 계속 하실 수 있어요. 문의는 ' + esc(c.contact) + '로 연락 주세요.</span>'
+      : '<span class="ship-title">지금은 주문을 받고 있지 않아요</span><span class="ship-note">다음 주문 접수를 준비 중이에요. 아래 귤 소식 받기를 신청해 주시면 주문이 시작될 때 알려드려요. 문의는 ' + esc(c.contact) + '로 연락 주세요.</span>';
     $('submitBtn').disabled = true;
+    $('newsLead').textContent = c.seasonOver ? '겨울 귤 주문이 시작되면 문자로 알려드려요.' : '다음 귤 주문이 시작되면 문자로 알려드려요.';
   }
+  // 마감이면 주문 입력 폼은 숨기고 귤 소식 받기만 보여줌
+  var closed = !cur;
+  ['secSender', 'secRecip', 'orderFooter', 'infoBank'].forEach(function(id){ $(id).classList.toggle('hidden', closed); });
+  $('secNews').classList.toggle('hidden', !closed);
   updateTotal();
+}
+
+/* ---------- 귤 소식 받기 (마감 때) ---------- */
+function subscribeNews(){
+  var name = $('nName').value.trim(), phone = $('nPhone').value;
+  var msg = $('nMsg');
+  msg.classList.add('hidden');
+  function fail(t, el){ msg.textContent = t; msg.classList.remove('hidden'); if (el) { el.classList.add('err'); el.focus(); } }
+  if (!name) return fail('이름을 입력해 주세요.', $('nName'));
+  if (!phoneOk(phone)) return fail('연락처를 확인해 주세요.', $('nPhone'));
+  if (!$('nOk').checked) return fail('귤 소식 받기에 동의해 주세요.');
+  loading(true, '신청하고 있어요');
+  apiPost({ action: 'subscribe', name: name, phone: phone, agree: true })
+    .then(function(){
+      loading(false);
+      store('gyulSender', { name: name, phone: fmtPhone(phone) });
+      $('newsCard').innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:8px 0">' +
+          '<div class="done-ico" style="width:64px;height:64px"><svg width="32" height="32" viewBox="0 0 40 40" aria-hidden="true"><path d="M10 21l7 7 13-15" stroke="#2F6B3A" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
+          '<b style="font-size:17px">신청됐어요</b>' +
+          '<p class="lead" style="font-size:14px">' + esc(name) + ' 님, ' + esc(fmtPhone(phone)) + '로<br>귤 소식을 알려드릴게요.</p>' +
+        '</div>';
+    })
+    .catch(function(e){ loading(false); fail(e.message || '신청하지 못했어요. 잠시 후 다시 시도해 주세요.'); });
 }
 
 
